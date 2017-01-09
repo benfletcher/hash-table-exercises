@@ -30,9 +30,35 @@ let palindromeTest = (word) => {
 }
 
 
-palindromeTest('madaminedenimadam');
+// palindromeTest('madaminedenimadam');
 
 // Write an algorithm to group a list of words into anagrams. For example, if the input was ['east', 'cars', 'acre', 'arcs', 'teas', 'eats', 'race'], the output should be: [['east', 'teas', 'eats'], ['cars', 'arcs'], ['acre', 'race']].
 
+let anagrams = (words) => {
+  let histogram = {};   // could also use ES6 `new Map()`
+  words.map(word =>
+    word.split("")
+    .sort()
+    .join("")
+  )
+  .forEach((word, i) => {
+    if (word in histogram) {
+      histogram[word].push(words[i]);
+    } else {
+      histogram[word] = [words[i]];
+    }
+  });
 
+  let output = [];
+  for (let key in histogram) {
+    output.push(histogram[key]);
+  }
+
+  console.log(output);
+  return output;
+};
+
+let testWords = ['east', 'cars', 'acre', 'arcs', 'teas', 'eats', 'race'];
+
+anagrams(testWords);
 // Write a hash map implementation which uses separate chaining.
