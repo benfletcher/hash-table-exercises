@@ -1,114 +1,148 @@
-function HashMap(capacity) {
-  this._capacity = capacity || 8;
-  this.length = 0;
-  this._deleted = 0;
-  this._slots = [];
+/* Sample HashMap slot:
 
-  // sample data
-  // this._slots[0] = [
-  //   {
-  //     key: 'color',
-  //     value: 'red',
-  //     deleted: false
-  //   },
-  //   {
-  //     key: 'cats',
-  //     value: 'meow',
-  //     deleted: false
-  //   }
-  // ]
+this._slots[0] = {
+  key: 'color',
+  value: 'red',
+  next: {
+    key: 'cats',
+    value: 'meow',
+    next: {}
+  }
 }
 
+*/
 
-HashMap._maxLoadRatio = 0.9;
-HashMap._sizeRatio = 3;
+function HashMap(capacity = 8) {
+  this._capacity = capacity;
+  this.length = 0;
+  this._slots = [];
 
-HashMap._hashString = function(string) {
-    var hash = 5381;
-    for (var i=0; i<string.length; i++) {
+  while (capacity--) {
+    this._slots.push({});
+  }
+}
+
+HashMap._MAX_LOAD_RATIO = 0.9;
+HashMap._SIZE_RATIO = 3;
+
+HashMap._hashString = function (string) {
+
+    let hash = 5381;
+
+    for (let i = 0; i < string.length; i++) {
+
         hash = (hash << 5) + hash + string.charCodeAt(i);
         hash = hash & hash;
+
     }
+
     return hash >>> 0;
 };
 
-HashMap.prototype.get = function(key) {
-  var index = this._find(key);
+HashMap.prototype.get = function (key) {
 
-  if (index === undefined) {
-    throw ('find() returned "undefined"');
+  let result = this._findKey(key);
+
+  return result.value;
+
+};
+
+HashMap.prototype.set = function (key, value) {
+
+  this._checkSize();
+
+  let item = this._findKey(key);
+
+  item.value = value;
+
+  if (!item.hasOwnProperty('key')) {
+
+    item.key = key;
+    item.next = {};
+    this.length += 1;
+
   }
 
-  if (this._slots[index] === undefined) {
-    return 'not found';
+  return this.length;
+
+};
+
+HashMap.prototype.remove = function (key) {
+
+  let item = this._findKey(key);
+
+  if (!item.hasOwnProperty('key')) {
+    throw (`Key '${key}' not found.`);
   }
 
-  let result = this._slots[index].find(item => item.key === key);
+  if (item.next.hasOwnProperty('key')) {
 
-  if (result !== undefined) {
-    return result.value;
+    item.key = item.next.key;
+    item.value = item.next.value;
+    item.next = item.next.next;
+
   } else {
-    return "not found";
-  }
-};
 
-// instead of setting the value, push onto the array at that index
-// but, if already a key in array, need update it, instead of pushing a new one
-HashMap.prototype.set = function(key, value) {
-  let loadRatio = HashMap._maxLoadRatio;
-  let sizeRatio = HashMap._sizeRatio;
-  if (((this.length + this._deleted + 1) / this._capacity) > loadRatio) {
-    this._resize(this._capacity * sizeRatio);
+    delete item.key;
+    delete item.value;
+
   }
-  let index = this._find(key);
-  if (this._slots[index] === undefined) {
-    this.length++;
-  }
-  this._slots[index] = {
-    key: key,
-    value: value,
-    deleted: false
-  };
+
+  this.length -= 1;
+
+  return this.length;
 
 };
 
-HashMap.prototype.remove = function(key) {
-  let index = this._find(key);
+HashMap.prototype._findSlot = function (key) {
 
-  if (this._slots[index] === undefined) {
-    throw ("Not found");
+  return HashMap._hashString(key) % this._capacity;
+
+}
+
+HashMap.prototype._findKey = function (key) {
+
+  let index = this._findSlot(key);
+  let item = this._slots[index]
+
+  while (item.hasOwnProperty('key') && item.key !== key) {
+
+    item = item.next;
+
   }
 
-  this._slots[index].deleted = true;
-  this.length--;
-  this._deleted++;
+  return item;
+
 };
 
-HashMap.prototype._find = function(key) {
-  let hash = HashMap._hashString(key);
-  let index = hash % this._capacity;
-  console.log('index:', index);
-  return index;
-  // for (let i = start; i < start + this._capacity; i++) {
-  //   let index = i % this._capacity;
-  //   if (this._slots[index] === undefined || (this._slots[index].key === key && this._slots[index].deleted !== true)) {
-  //     return index;
-  //   }
-  // }
-};
+HashMap.prototype._checkSize = function () {
 
-HashMap.prototype._resize = function(newSize) {
+  let loadRatio = (this.length + 1) / this._capacity;
+
+  if (loadRatio <= HashMap._MAX_LOAD_RATIO) {
+    return;
+  }
+
+  let newSize = this._capacity * HashMap._SIZE_RATIO;
   let oldMap = this._slots;
+
   this._slots = [];
   this.length = 0;
-  this._deleted = 0;
   this._capacity = newSize;
 
-  for (let i = 0; i < oldMap.length; i++) {
-    if (oldMap[i] !== undefined && oldMap[i].deleted !== true) {
-      this.set(oldMap[i].key, oldMap[i].value);
-    }
+  while (newSize--) {
+    this._slots.push({});
   }
-};
 
-let myHash = new HashMap(3);
+  oldMap.forEach(item => {
+
+    while (item && item.hasOwnProperty('key')) {
+
+      this.set(item.key, item.value);
+      item = item.next;
+
+    }
+
+  });
+
+};
