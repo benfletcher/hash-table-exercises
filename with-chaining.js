@@ -6,20 +6,22 @@ this._slots[0] = {
   next: {
     key: 'cats',
     value: 'meow',
-    next: {}
+    next: {}   // empty slots and empty nodes represented by empty object
   }
 }
 
 */
 
 function HashMap(capacity = 8) {
+
   this._capacity = capacity;
   this.length = 0;
-  this._slots = [];
 
-  while (capacity--) {
-    this._slots.push({});
-  }
+  // slots start as an array of empty object literals, basis of linked list
+  // can't use fill({}) because it inserts reference to same object repeatedly
+  // have to fill first -- map() skips undefined
+  this._slots = Array(capacity).fill().map(() => ({}));
+
 }
 
 HashMap._MAX_LOAD_RATIO = 0.9;
@@ -41,9 +43,7 @@ HashMap._hashString = function (string) {
 
 HashMap.prototype.get = function (key) {
 
-  let result = this._findKey(key);
-
-  return result.value;
+  return this._findKey(key).value;
 
 };
 
@@ -53,8 +53,10 @@ HashMap.prototype.set = function (key, value) {
 
   let item = this._findKey(key);
 
+  // set or update value regardless of whether this is a new node
   item.value = value;
 
+  // if no preexisting key in hashmap, add key and empty next object
   if (!item.hasOwnProperty('key')) {
 
     item.key = key;
@@ -72,9 +74,11 @@ HashMap.prototype.remove = function (key) {
   let item = this._findKey(key);
 
   if (!item.hasOwnProperty('key')) {
-    throw (`Key '${key}' not found.`);
+    throw new Error(`Key '${key}' not found.`);
   }
 
+  // since _findKey returns a ref to either the desired node or an empty node,
+  // mutate item with child node or remove key-value pair info
   if (item.next.hasOwnProperty('key')) {
 
     item.key = item.next.key;
@@ -126,13 +130,9 @@ HashMap.prototype._checkSize = function () {
   let newSize = this._capacity * HashMap._SIZE_RATIO;
   let oldMap = this._slots;
 
-  this._slots = [];
+  this._slots = Array(newSize).fill().map(() => ({}));
   this.length = 0;
   this._capacity = newSize;
-
-  while (newSize--) {
-    this._slots.push({});
-  }
 
   oldMap.forEach(item => {
 
