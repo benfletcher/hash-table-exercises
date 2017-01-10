@@ -98,6 +98,25 @@ HashMap.prototype.remove = function (key) {
 
 };
 
+HashMap.prototype.keys = function () {
+
+    let keys = [];
+
+    this._slots.forEach(item => {
+
+      while (item.hasOwnProperty('key')) {
+
+        keys.push(item.key);
+        item = item.next;
+
+      }
+
+    });
+
+    return keys;
+
+}
+
 HashMap.prototype._findSlot = function (key) {
 
   return HashMap._hashString(key) % this._capacity;
